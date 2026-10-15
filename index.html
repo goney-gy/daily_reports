@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>周报填写系统</title>
+    <title>日报填写系统</title>
     <style>
         * {
             margin: 0;
@@ -82,14 +82,6 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 14px;
-            cursor: not-allowed;
-            background-color: #f9f9f9;
-        }
-        .tip-text {
-            margin: 0 0 25px 90px;
-            color: #555;
-            font-size: 14px;
-            line-height: 1.6;
         }
         .project-row {
             display: flex;
@@ -178,6 +170,10 @@
             background-color: #f8d7da;
             color: #721c24;
         }
+        .admin-table tr.weekend {
+            background-color: #e8f4fd;
+            color: #2c3e50;
+        }
         .filter-bar {
             margin-bottom: 20px;
             display: flex;
@@ -211,32 +207,26 @@
 
     <div class="form-section active" id="formSection">
         <div class="date-row">
-            <label>周报周期：</label>
-            <input type="text" id="fillDate" readonly>
+            <label>填写日期：</label>
+            <input type="date" id="fillDate">
         </div>
         <div class="form-row">
             <label>姓名：</label>
             <select id="username" required>
                 <option value="">请选择姓名</option>
-                <option value="李孟雅">李孟雅</option>
-                <option value="李英超">李英超</option>
-                <option value="戴阳">戴阳</option>
-                <option value="黄晓杰">黄晓杰</option>
-                <option value="牛中沛">牛中沛</option>
-                <option value="田帅">田帅</option>
-                <option value="温家奇">温家奇</option>
-                <option value="范霄杰">范霄杰</option>
-                <option value="王乾坤">王乾坤</option>
             </select>
         </div>
-
-        <div class="tip-text">
-            常填项目类型：语料运营平台、自动化检索、公共服务平台、camp平台、工具链、国泰海通、科学数据管理中心
+        <div class="form-row">
+            <label>当日调休：</label>
+            <select id="leaveSelect">
+                <option value="否">否</option>
+                <option value="是">是</option>
+            </select>
         </div>
 
         <div id="projectRowsContainer">
             <div class="project-row">
-                <input type="text" class="short-input" placeholder="项目类型">
+                <input type="text" class="short-input" placeholder="项目名称">
                 <textarea class="long-input" placeholder="项目内容；每次仅填写一条，不要序号。"></textarea>
                 <select class="status-select">
                     <option value="30%">30%</option>
@@ -246,7 +236,7 @@
                 </select>
             </div>
             <div class="project-row">
-                <input type="text" class="short-input" placeholder="项目类型">
+                <input type="text" class="short-input" placeholder="项目名称">
                 <textarea class="long-input" placeholder="项目内容；每次仅填写一条，不要序号。"></textarea>
                 <select class="status-select">
                     <option value="30%">30%</option>
@@ -264,23 +254,14 @@
     </div>
 
     <div class="admin-section" id="adminSection">
-        <h2>周报汇总</h2>
+        <h2>日报汇总</h2>
         <div class="filter-bar">
             <select id="filterUsername">
                 <option value="">全部人员</option>
-                <option value="李孟雅">李孟雅</option>
-                <option value="李英超">李英超</option>
-                <option value="戴阳">戴阳</option>
-                <option value="黄晓杰">黄晓杰</option>
-                <option value="牛中沛">牛中沛</option>
-                <option value="田帅">田帅</option>
-                <option value="温家奇">温家奇</option>
-                <option value="范霄杰">范霄杰</option>
-                <option value="王乾坤">王乾坤</option>
             </select>
-            <select id="filterDate">
-                <option value="">全部周期</option>
-            </select>
+            <input type="date" id="filterDateStart">
+            <span>至</span>
+            <input type="date" id="filterDateEnd">
             <button id="filterBtn">筛选</button>
             <button id="showAllBtn">显示全部</button>
         </div>
@@ -289,12 +270,13 @@
         <table class="admin-table" id="adminTable">
             <thead>
                 <tr>
-                    <th>周报周期</th>
+                    <th>填写日期</th>
                     <th>提交时间</th>
                     <th>姓名</th>
-                    <th>项目类型</th>
-                    <th>项目内容</th>
-                    <th>完成状态</th>
+                    <th>项目名称</th>
+                    <th>工作内容</th>
+                    <th>完成进度</th>
+                    <th>当日调休</th>
                     <th>记录状态</th>
                 </tr>
             </thead>
@@ -306,13 +288,14 @@
 <script>
     const SUPABASE_URL = "https://avtrtxgzsakanawxvuiv.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2dHJ0eGd6c2FrYW5hd3h2dWl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MjQ5MDcsImV4cCI6MjA4OTMwMDkwN30.SIvHaxe0ao2g-EbXqjYu9DkRaXzrUK6APeSXGNX3uZ8";
+    const TABLE_NAME = "daily_reports"; // 对应 Data API：/rest/v1/daily_reports
     
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let isSubmitted = false;
     let userReports = [];
     let currentFilteredData = [];
-    let lastSubmittedId = null; // 记录最后一次提交的ID，用于作废本条
+    let lastSubmittedIds = []; // 记录最后一次提交的所有记录ID，用于作废本条
 
     const formatDate = (date) => {
         const y = date.getFullYear();
@@ -321,20 +304,61 @@
         return `${y}-${m}-${d}`;
     };
 
-    const getLastWeekRange = () => {
+    const PEOPLE = ['李孟雅', '李英超', '戴阳', '黄晓杰', '牛中沛', '田帅', '温家奇', '范霄杰', '王乾坤', '龙陈琪', '陈洪森'];
+
+    function initNameSelects() {
+        ['username', 'filterUsername'].forEach(id => {
+            const sel = document.getElementById(id);
+            PEOPLE.forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n;
+                opt.textContent = n;
+                sel.appendChild(opt);
+            });
+        });
+    }
+
+    function isWeekend(dateStr) {
+        const w = new Date(dateStr + 'T00:00:00').getDay();
+        return w === 0 || w === 6; // 0=周日 6=周六
+    }
+
+    // 返回 [start, end] 区间内所有周六/周日（含端点）
+    function getWeekendDatesInRange(startStr, endStr) {
+        const dates = [];
+        const cur = new Date(startStr + 'T00:00:00');
+        const end = new Date(endStr + 'T00:00:00');
+        while (cur <= end) {
+            if (isWeekend(formatDate(cur))) dates.push(formatDate(cur));
+            cur.setDate(cur.getDate() + 1);
+        }
+        return dates;
+    }
+
+    // 本周一至本周日
+    function getCurrentWeekRange() {
         const today = new Date();
         const day = today.getDay() || 7;
-        const mondayThisWeek = new Date(today);
-        mondayThisWeek.setDate(today.getDate() - (day - 1));
-        const fridayThisWeek = new Date(mondayThisWeek);
-        fridayThisWeek.setDate(mondayThisWeek.getDate() + 4);
-        return `${formatDate(mondayThisWeek)}至${formatDate(fridayThisWeek)}`;
-    };
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - (day - 1));
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        return { start: formatDate(monday), end: formatDate(sunday) };
+    }
+
+    // 有效筛选区间：两个日期都填则用用户区间，否则回退本周
+    function getEffectiveRange() {
+        const s = document.getElementById('filterDateStart').value;
+        const e = document.getElementById('filterDateEnd').value;
+        if (!s && !e) return getCurrentWeekRange();
+        const week = getCurrentWeekRange();
+        return { start: s || week.start, end: e || week.end };
+    }
 
     async function loadReports() {
         try {
             const { data, error } = await supabase
-                .from('weekly_reports')
+                .from(TABLE_NAME)
                 .select('*')
                 .order('created_at', { ascending: false });
             
@@ -352,18 +376,12 @@
         }
     }
 
-    // 提交：新增记录，返回本条记录ID
-    async function saveReport(report) {
+    // 提交：每条项目记录插入一行
+    async function saveReport(rows) {
         try {
             const { data: insertData, error: insertError } = await supabase
-                .from('weekly_reports')
-                .insert([{
-                    fill_date: report.fillDate,
-                    username: report.username,
-                    projects: report.projects,
-                    submit_time: report.submitTime,
-                    is_invalid: report.isInvalid
-                }])
+                .from(TABLE_NAME)
+                .insert(rows)
                 .select();
             
             if (insertError) {
@@ -372,7 +390,7 @@
                 return false;
             }
             if (insertData && insertData.length > 0) {
-                lastSubmittedId = insertData[0].id; // 保存本次提交ID
+                lastSubmittedIds = insertData.map(r => r.id); // 保存本次提交的所有ID
             }
             return true;
         } catch (e) {
@@ -382,24 +400,24 @@
         }
     }
 
-    // 作废：只作废最后一次提交的那条记录
+    // 作废：只作废最后一次提交的所有记录
     async function invalidateLastSubmit() {
-        if (!lastSubmittedId) {
+        if (!lastSubmittedIds.length) {
             alert('无可作废的提交记录');
             return false;
         }
         try {
             const { error } = await supabase
-                .from('weekly_reports')
+                .from(TABLE_NAME)
                 .update({ is_invalid: true })
-                .eq('id', lastSubmittedId);
+                .in('id', lastSubmittedIds);
             
             if (error) {
                 console.error('作废失败：', error);
                 alert('作废本条记录失败');
                 return false;
             }
-            lastSubmittedId = null;
+            lastSubmittedIds = [];
             return true;
         } catch (e) {
             console.error('作废异常：', e);
@@ -407,28 +425,52 @@
         }
     }
 
-    window.onload = async function () {
-        document.getElementById('fillDate').value = getLastWeekRange();
-        await loadReports();
-        initWeekSelectOptions();
-    };
+    // 自动作废：同一姓名+同一日期，将历史有效记录全部置为失效（只保留最新一次提交）
+    // 无旧记录时返回 null（跳过作废，直接写入新记录）；有旧记录被作废返回 true；出错返回 false
+    async function invalidatePreviousSubmits(usernameVal, fillDateVal) {
+        try {
+            // 先查：当天该姓名是否存在有效旧记录，没有就直接跳过作废
+            const { count, error: countError } = await supabase
+                .from(TABLE_NAME)
+                .select('*', { count: 'exact', head: true })
+                .eq('username', usernameVal)
+                .eq('fill_date', fillDateVal)
+                .eq('is_invalid', false);
 
-    function initWeekSelectOptions() {
-        const select = document.getElementById('filterDate');
-        while (select.options.length > 1) {
-            select.remove(1);
+            if (countError) {
+                console.error('查询旧记录错误：', countError);
+                alert(`查询旧记录失败：${countError.message}`);
+                return false;
+            }
+            if (count === 0) return null;
+
+            const { data, error } = await supabase
+                .from(TABLE_NAME)
+                .update({ is_invalid: true })
+                .eq('username', usernameVal)
+                .eq('fill_date', fillDateVal)
+                .eq('is_invalid', false)
+                .select();
+            
+            if (error) {
+                console.error('自动作废旧记录错误：', error);
+                alert(`作废旧记录失败：${error.message}`);
+                return false;
+            }
+            if (data && data.length > 0) return true;
+            return null;
+        } catch (e) {
+            console.error('自动作废旧记录异常：', e);
+            alert('作废旧记录异常，请检查网络或 Supabase 配置');
+            return false;
         }
-        const weekSet = new Set();
-        weekSet.add(getLastWeekRange());
-        userReports.forEach(report => { weekSet.add(report.fill_date); });
-        const weekList = Array.from(weekSet).sort((a, b) => new Date(b.split('至')[0]) - new Date(a.split('至')[0]));
-        weekList.forEach(week => {
-            const opt = document.createElement('option');
-            opt.value = week;
-            opt.textContent = week;
-            select.appendChild(opt);
-        });
     }
+
+    window.onload = async function () {
+        document.getElementById('fillDate').value = formatDate(new Date());
+        initNameSelects();
+        await loadReports();
+    };
 
     const userBtn = document.getElementById('userBtn');
     const adminBtn = document.getElementById('adminBtn');
@@ -454,7 +496,7 @@
         const row = document.createElement('div');
         row.className = 'project-row';
         row.innerHTML = `
-            <input type="text" class="short-input" placeholder="项目类型">
+            <input type="text" class="short-input" placeholder="项目名称">
             <textarea class="long-input" placeholder="项目内容；每次仅填写一条，不要序号。"></textarea>
             <select class="status-select">
                 <option value="30%">30%</option>
@@ -468,31 +510,56 @@
     const submitBtn = document.getElementById('submitBtn');
     const username = document.getElementById('username');
     const fillDate = document.getElementById('fillDate');
+    const leaveSelect = document.getElementById('leaveSelect');
 
     submitBtn.onclick = async () => {
         if (!username.value) {
             alert('请选择姓名！');
             return;
         }
-        
-        const report = {
-            fillDate: fillDate.value,
-            username: username.value,
-            projects: [],
-            submitTime: new Date().toLocaleString(),
-            isInvalid: false
-        };
-        
+        if (!fillDate.value) {
+            alert('请选择填写日期！');
+            return;
+        }
+
+        const isLeave = leaveSelect.value === '是';
+        const rows = [];
+
         document.querySelectorAll('.project-row').forEach(row => {
             const t = row.querySelector('.short-input').value.trim();
             const c = row.querySelector('.long-input').value.trim();
             const s = row.querySelector('.status-select').value;
             if (t || c) {
-                report.projects.push({ type: t, content: c, status: s });
+                rows.push({ projectName: t, workContent: c, progress: s });
             }
         });
 
-        const success = await saveReport(report);
+        if (!rows.length && !isLeave) {
+            alert('请至少填写一条项目内容，或选择当日调休为"是"');
+            return;
+        }
+        // 调休且未填项目时，仍插入一条记录用于考勤留痕
+        if (!rows.length && isLeave) {
+            rows.push({ projectName: '当日调休', workContent: '', progress: '已完成' });
+        }
+
+        const submitTime = new Date().toLocaleString();
+        const insertPayload = rows.map(r => ({
+            fill_date: fillDate.value,
+            username: username.value,
+            project_name: r.projectName,
+            work_content: r.workContent,
+            progress: r.progress,
+            is_leave: isLeave,
+            submit_time: submitTime,
+            is_invalid: false
+        }));
+
+        // 同一姓名+同一日期：先自动作废之前提交的旧记录，再写入本次最新记录
+        const invOk = await invalidatePreviousSubmits(username.value, fillDate.value);
+        if (invOk === false) return;
+
+        const success = await saveReport(insertPayload);
         if (!success) return;
 
         await loadReports();
@@ -517,6 +584,8 @@
             reBtn.remove();
 
             // 清空表单
+            leaveSelect.value = '否';
+            document.getElementById('fillDate').value = formatDate(new Date());
             document.querySelectorAll('.project-row').forEach((r, i) => {
                 if (i < 2) {
                     r.querySelector('.short-input').value = '';
@@ -528,85 +597,117 @@
             });
             alert('已作废本次提交记录，可重新填写');
         };
-        alert('提交成功！');
+        alert(invOk ? '提交成功！当日同姓名之前提交的记录已自动作废。' : '提交成功！');
     };
 
-    function renderAdminTable(filtered) {
-        const data = filtered || userReports;
+    // 组装展示数据：真实记录 + 周末默认记录（未提交者自动补"周末"状态）
+    function buildDisplayRows() {
+        const u = document.getElementById('filterUsername').value;
+        const startInput = document.getElementById('filterDateStart').value;
+        const endInput = document.getElementById('filterDateEnd').value;
+
+        // 真实记录：按人员 + 日期区间筛选
+        let realList = [...userReports];
+        if (u) realList = realList.filter(r => r.username === u);
+        if (startInput) realList = realList.filter(r => r.fill_date >= startInput);
+        if (endInput) realList = realList.filter(r => r.fill_date <= endInput);
+
+        // 周末默认行：范围取有效筛选区间（未设筛选时为本周）
+        const range = getEffectiveRange();
+        const weekendDates = getWeekendDatesInRange(range.start, range.end);
+        const peopleForWeekend = u ? [u] : PEOPLE;
+
+        const validSet = new Set();
+        realList.forEach(r => { if (!r.is_invalid) validSet.add(`${r.username}|${r.fill_date}`); });
+
+        const weekendRows = [];
+        weekendDates.forEach(d => {
+            peopleForWeekend.forEach(name => {
+                if (validSet.has(`${name}|${d}`)) return; // 已提交则展示用户提交内容
+                weekendRows.push({
+                    fill_date: d,
+                    submit_time: '-',
+                    username: name,
+                    project_name: '-',
+                    work_content: '-',
+                    progress: '-',
+                    is_leave: null,
+                    is_invalid: false,
+                    _virtual: true
+                });
+            });
+        });
+
+        const combined = realList.concat(weekendRows);
+        combined.sort((a, b) => {
+            const d = b.fill_date.localeCompare(a.fill_date);
+            if (d !== 0) return d;
+            return (a._virtual ? 1 : 0) - (b._virtual ? 1 : 0);
+        });
+        return combined;
+    }
+
+    function renderAdminTable() {
+        const data = buildDisplayRows();
         currentFilteredData = data;
         const tbody = document.querySelector('#adminTable tbody');
         tbody.innerHTML = '';
         
         data.forEach(rep => {
-            rep.projects.forEach((proj) => {
-                const tr = document.createElement('tr');
-                if (rep.is_invalid) tr.classList.add('invalid');
-                tr.innerHTML = `
-                    <td>${rep.fill_date}</td>
-                    <td>${rep.submit_time}</td>
-                    <td>${rep.username}</td>
-                    <td>${proj.type || '-'}</td>
-                    <td>${proj.content || '-'}</td>
-                    <td>${proj.status}</td>
-                    <td>${rep.is_invalid ? '已作废' : '有效'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
+            const tr = document.createElement('tr');
+            if (rep._virtual) {
+                tr.classList.add('weekend');
+            } else if (rep.is_invalid) {
+                tr.classList.add('invalid');
+            }
+            tr.innerHTML = `
+                <td>${rep.fill_date}</td>
+                <td>${rep.submit_time}</td>
+                <td>${rep.username}</td>
+                <td>${rep.project_name || '-'}</td>
+                <td>${rep.work_content || '-'}</td>
+                <td>${rep.progress || '-'}</td>
+                <td>${rep._virtual ? '-' : (rep.is_leave ? '是' : '否')}</td>
+                <td>${rep._virtual ? '周末' : (rep.is_invalid ? '已作废' : '有效')}</td>
+            `;
+            tbody.appendChild(tr);
         });
     }
 
     document.getElementById('filterBtn').onclick = async () => {
         await loadReports();
-        const u = document.getElementById('filterUsername').value;
-        const w = document.getElementById('filterDate').value;
-        let f = [...userReports];
-        if (u) f = f.filter(x => x.username === u);
-        if (w) f = f.filter(x => x.fill_date === w);
-        renderAdminTable(f);
+        renderAdminTable();
     };
 
     document.getElementById('showAllBtn').onclick = async () => {
         document.getElementById('filterUsername').value = '';
-        document.getElementById('filterDate').value = '';
+        document.getElementById('filterDateStart').value = '';
+        document.getElementById('filterDateEnd').value = '';
         await loadReports();
         renderAdminTable();
     };
 
     document.getElementById('exportBtn').onclick = () => {
         const validList = currentFilteredData.filter(x => !x.is_invalid);
-        const map = {};
-        validList.forEach(rep => {
-            rep.projects.forEach(p => {
-                if (!p.type) return;
-                const key = `${rep.fill_date}|${p.type}`;
-                if (!map[key]) {
-                    map[key] = {
-                        week: rep.fill_date,
-                        type: p.type,
-                        users: new Set(),
-                        items: []
-                    };
-                }
-                map[key].users.add(rep.username);
-                map[key].items.push(`${p.content}-${p.status}`);
-            });
-        });
         const data = [
-            ['周报周期', '项目类型', '参与人员', '项目内容-完成状态', '记录状态']
+            ['填写日期', '姓名', '项目名称', '工作内容', '完成进度', '当日调休', '记录状态', '提交时间']
         ];
-        Object.values(map).forEach(item => {
+        validList.forEach(rep => {
             data.push([
-                item.week,
-                item.type,
-                Array.from(item.users).join('、'),
-                item.items.join('\n'),
-                '有效'
+                rep.fill_date,
+                rep.username,
+                rep.project_name || '-',
+                rep.work_content || '-',
+                rep.progress || '-',
+                rep._virtual ? '-' : (rep.is_leave ? '是' : '否'),
+                rep._virtual ? '周末' : '有效',
+                rep.submit_time
             ]);
         });
         const ws = XLSX.utils.aoa_to_sheet(data);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, '周报');
-        XLSX.writeFile(wb, `周报_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, '日报');
+        XLSX.writeFile(wb, `日报_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`);
     };
 </script>
 </body>
