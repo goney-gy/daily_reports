@@ -217,10 +217,13 @@
             </select>
         </div>
         <div class="form-row">
-            <label>当日调休：</label>
-            <select id="leaveSelect">
-                <option value="否">否</option>
-                <option value="是">是</option>
+            <label>工作状态：</label>
+            <select id="workStatusSelect">
+                <option value="正常工作">正常工作</option>
+                <option value="当日调休">当日调休</option>
+                <option value="事假">事假</option>
+                <option value="病假">病假</option>
+                <option value="其他">其他</option>
             </select>
         </div>
 
@@ -276,7 +279,7 @@
                     <th>项目名称</th>
                     <th>工作内容</th>
                     <th>完成进度</th>
-                    <th>当日调休</th>
+                    <th>工作状态</th>
                     <th>记录状态</th>
                 </tr>
             </thead>
@@ -510,7 +513,7 @@
     const submitBtn = document.getElementById('submitBtn');
     const username = document.getElementById('username');
     const fillDate = document.getElementById('fillDate');
-    const leaveSelect = document.getElementById('leaveSelect');
+    const workStatusSelect = document.getElementById('workStatusSelect');
 
     submitBtn.onclick = async () => {
         if (!username.value) {
@@ -522,7 +525,7 @@
             return;
         }
 
-        const isLeave = leaveSelect.value === '是';
+        const workStatus = workStatusSelect.value;
         const rows = [];
 
         document.querySelectorAll('.project-row').forEach(row => {
@@ -534,13 +537,13 @@
             }
         });
 
-        if (!rows.length && !isLeave) {
-            alert('请至少填写一条项目内容，或选择当日调休为"是"');
+        if (!rows.length && workStatus === '正常工作') {
+            alert('请至少填写一条项目内容，或选择非"正常工作"的工作状态');
             return;
         }
-        // 调休且未填项目时，仍插入一条记录用于考勤留痕
-        if (!rows.length && isLeave) {
-            rows.push({ projectName: '当日调休', workContent: '', progress: '已完成' });
+        // 非正常工作（调休/事假/病假/其他）且未填项目时，仍插入一条记录用于考勤留痕
+        if (!rows.length) {
+            rows.push({ projectName: workStatus, workContent: '', progress: '已完成' });
         }
 
         const submitTime = new Date().toLocaleString();
@@ -550,7 +553,7 @@
             project_name: r.projectName,
             work_content: r.workContent,
             progress: r.progress,
-            is_leave: isLeave,
+            work_status: workStatus,
             submit_time: submitTime,
             is_invalid: false
         }));
@@ -584,7 +587,7 @@
             reBtn.remove();
 
             // 清空表单
-            leaveSelect.value = '否';
+            workStatusSelect.value = '正常工作';
             document.getElementById('fillDate').value = formatDate(new Date());
             document.querySelectorAll('.project-row').forEach((r, i) => {
                 if (i < 2) {
@@ -631,7 +634,7 @@
                     project_name: '-',
                     work_content: '-',
                     progress: '-',
-                    is_leave: null,
+                    work_status: null,
                     is_invalid: false,
                     _virtual: true
                 });
@@ -667,7 +670,7 @@
                 <td>${rep.project_name || '-'}</td>
                 <td>${rep.work_content || '-'}</td>
                 <td>${rep.progress || '-'}</td>
-                <td>${rep._virtual ? '-' : (rep.is_leave ? '是' : '否')}</td>
+                <td>${rep._virtual ? '-' : (rep.work_status || '正常工作')}</td>
                 <td>${rep._virtual ? '周末' : (rep.is_invalid ? '已作废' : '有效')}</td>
             `;
             tbody.appendChild(tr);
@@ -690,7 +693,7 @@
     document.getElementById('exportBtn').onclick = () => {
         const validList = currentFilteredData.filter(x => !x.is_invalid);
         const data = [
-            ['填写日期', '姓名', '项目名称', '工作内容', '完成进度', '当日调休', '记录状态', '提交时间']
+            ['填写日期', '姓名', '项目名称', '工作内容', '完成进度', '工作状态', '记录状态', '提交时间']
         ];
         validList.forEach(rep => {
             data.push([
@@ -699,7 +702,7 @@
                 rep.project_name || '-',
                 rep.work_content || '-',
                 rep.progress || '-',
-                rep._virtual ? '-' : (rep.is_leave ? '是' : '否'),
+                rep._virtual ? '-' : (rep.work_status || '正常工作'),
                 rep._virtual ? '周末' : '有效',
                 rep.submit_time
             ]);
