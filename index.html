@@ -220,7 +220,8 @@
             <label>工作状态：</label>
             <select id="workStatusSelect">
                 <option value="正常工作">正常工作</option>
-                <option value="当日调休">当日调休</option>
+                <option value="调休">调休</option>
+                <option value="年假">年假</option>
                 <option value="事假">事假</option>
                 <option value="病假">病假</option>
                 <option value="其他">其他</option>
@@ -541,7 +542,7 @@
             alert('请至少填写一条项目内容，或选择非"正常工作"的工作状态');
             return;
         }
-        // 非正常工作（调休/事假/病假/其他）且未填项目时，仍插入一条记录用于考勤留痕
+        // 非正常工作（调休/年假/事假/病假/其他）且未填项目时，仍插入一条记录用于考勤留痕
         if (!rows.length) {
             rows.push({ projectName: workStatus, workContent: '', progress: '已完成' });
         }
