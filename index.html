@@ -89,11 +89,12 @@
             margin-bottom: 15px;
             align-items: flex-start;
         }
-        .project-row .short-input {
+        .project-row .project-select {
             width: 20%;
             padding: 8px 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            font-size: 14px;
         }
         .project-row .long-input {
             flex: 1;
@@ -230,7 +231,20 @@
 
         <div id="projectRowsContainer">
             <div class="project-row">
-                <input type="text" class="short-input" placeholder="项目名称">
+                <select class="project-select">
+                    <option value="">请选择项目</option>
+                    <option value="公共服务平台">公共服务平台</option>
+                    <option value="考试系统">考试系统</option>
+                    <option value="上汽智驾">上汽智驾</option>
+                    <option value="上海电气">上海电气</option>
+                    <option value="UI设计">UI设计</option>
+                    <option value="语料运营平台">语料运营平台</option>
+                    <option value="科委项目">科委项目</option>
+                    <option value="老师傅">老师傅</option>
+                    <option value="工具链">工具链</option>
+                    <option value="库帕思门户">库帕思门户</option>
+                    <option value="其他">其他</option>
+                </select>
                 <textarea class="long-input" placeholder="项目内容；每次仅填写一条，不要序号。"></textarea>
                 <select class="status-select">
                     <option value="30%">30%</option>
@@ -240,7 +254,20 @@
                 </select>
             </div>
             <div class="project-row">
-                <input type="text" class="short-input" placeholder="项目名称">
+                <select class="project-select">
+                    <option value="">请选择项目</option>
+                    <option value="公共服务平台">公共服务平台</option>
+                    <option value="考试系统">考试系统</option>
+                    <option value="上汽智驾">上汽智驾</option>
+                    <option value="上海电气">上海电气</option>
+                    <option value="UI设计">UI设计</option>
+                    <option value="语料运营平台">语料运营平台</option>
+                    <option value="科委项目">科委项目</option>
+                    <option value="老师傅">老师傅</option>
+                    <option value="工具链">工具链</option>
+                    <option value="库帕思门户">库帕思门户</option>
+                    <option value="其他">其他</option>
+                </select>
                 <textarea class="long-input" placeholder="项目内容；每次仅填写一条，不要序号。"></textarea>
                 <select class="status-select">
                     <option value="30%">30%</option>
@@ -500,7 +527,20 @@
         const row = document.createElement('div');
         row.className = 'project-row';
         row.innerHTML = `
-            <input type="text" class="short-input" placeholder="项目名称">
+            <select class="project-select">
+                <option value="">请选择项目</option>
+                <option value="公共服务平台">公共服务平台</option>
+                <option value="考试系统">考试系统</option>
+                <option value="上汽智驾">上汽智驾</option>
+                <option value="上海电气">上海电气</option>
+                <option value="UI设计">UI设计</option>
+                <option value="语料运营平台">语料运营平台</option>
+                <option value="科委项目">科委项目</option>
+                <option value="老师傅">老师傅</option>
+                <option value="工具链">工具链</option>
+                <option value="库帕思门户">库帕思门户</option>
+                <option value="其他">其他</option>
+            </select>
             <textarea class="long-input" placeholder="项目内容；每次仅填写一条，不要序号。"></textarea>
             <select class="status-select">
                 <option value="30%">30%</option>
@@ -528,21 +568,29 @@
 
         const workStatus = workStatusSelect.value;
         const rows = [];
+        let missingProject = false;
 
         document.querySelectorAll('.project-row').forEach(row => {
-            const t = row.querySelector('.short-input').value.trim();
+            const t = row.querySelector('.project-select').value;
             const c = row.querySelector('.long-input').value.trim();
             const s = row.querySelector('.status-select').value;
-            if (t || c) {
+            if (!t && c) {
+                missingProject = true;
+            } else if (t || c) {
                 rows.push({ projectName: t, workContent: c, progress: s });
             }
         });
+
+        if (missingProject) {
+            alert('请为填写了工作内容的行选择项目名称！');
+            return;
+        }
 
         if (!rows.length && workStatus === '正常工作') {
             alert('请至少填写一条项目内容，或选择非"正常工作"的工作状态');
             return;
         }
-        // 非正常工作（调休/年假/事假/病假/其他）且未填项目时，仍插入一条记录用于考勤留痕
+        // 非正常工作（调休/事假/病假/其他）且未填项目时，仍插入一条记录用于考勤留痕
         if (!rows.length) {
             rows.push({ projectName: workStatus, workContent: '', progress: '已完成' });
         }
@@ -592,7 +640,7 @@
             document.getElementById('fillDate').value = formatDate(new Date());
             document.querySelectorAll('.project-row').forEach((r, i) => {
                 if (i < 2) {
-                    r.querySelector('.short-input').value = '';
+                    r.querySelector('.project-select').value = '';
                     r.querySelector('.long-input').value = '';
                     r.querySelector('.status-select').value = '30%';
                 } else {
