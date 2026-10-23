@@ -770,8 +770,10 @@
         if (endInput) realList = realList.filter(r => r.fill_date <= endInput);
 
         // 周末默认行：范围取有效筛选区间（未设筛选时为本周）
+        // 只补充已到来的周末（<= 今天），未到的周六/周日不提前显示
         const range = getEffectiveRange();
-        const weekendDates = getWeekendDatesInRange(range.start, range.end);
+        const todayStr = formatDate(new Date());
+        const weekendDates = getWeekendDatesInRange(range.start, range.end).filter(d => d <= todayStr);
         const peopleForWeekend = u ? [u] : PEOPLE;
 
         const validSet = new Set();
