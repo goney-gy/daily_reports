@@ -292,7 +292,7 @@
 
     <div class="form-section active" id="formSection">
         <div class="date-row">
-            <label>填写日期：</label>
+            <label>填写所选日期：</label>
             <input type="date" id="fillDate">
         </div>
         <div class="form-row">
@@ -389,7 +389,7 @@
         <table class="admin-table" id="adminTable">
             <thead>
                 <tr>
-                    <th>填写日期</th>
+                    <th>填写所选日期</th>
                     <th>提交时间</th>
                     <th>姓名</th>
                     <th>项目名称</th>
@@ -670,7 +670,7 @@
             return;
         }
         if (!fillDate.value) {
-            alert('请选择填写日期！');
+            alert('请选择填写所选日期！');
             return;
         }
 
@@ -901,7 +901,7 @@
     document.getElementById('exportBtn').onclick = () => {
         const validList = currentFilteredData.filter(x => !x.is_invalid);
         const data = [
-            ['填写日期', '姓名', '项目名称', '工作内容', '完成进度', '工作状态', '记录状态', '提交时间']
+            ['填写所选日期', '姓名', '项目名称', '工作内容', '完成进度', '工作状态', '记录状态', '提交时间']
         ];
         validList.forEach(rep => {
             data.push([
